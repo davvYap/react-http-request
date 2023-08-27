@@ -6,22 +6,45 @@ import "./App.css";
 function App() {
   const [movies, setMovies] = useState([]);
   const [dataLoading, setDataLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   async function fetchMoviesHandler() {
     setDataLoading(true);
-    const response = await fetch("https://swapi.dev/api/films/");
-    const data = await response.json();
+    setError(null);
+    //handling error
+    try {
+      const response = await fetch("https://swapi.dev/api/films/");
 
-    const transformedMovies = data.results.map((movieData) => {
-      return {
-        id: movieData.episode_id,
-        title: movieData.title,
-        releaseDate: movieData.release_date,
-        openingText: movieData.opening_crawl,
-      };
-    });
-    setMovies(transformedMovies);
+      if (!response.ok) {
+        throw new Error("Something wrong...");
+      }
+
+      const data = await response.json();
+      const transformedMovies = data.results.map((movieData) => {
+        return {
+          id: movieData.episode_id,
+          title: movieData.title,
+          releaseDate: movieData.release_date,
+          openingText: movieData.opening_crawl,
+        };
+      });
+      setMovies(transformedMovies);
+      setDataLoading(false);
+    } catch (error) {
+      setError(error.message);
+    }
     setDataLoading(false);
+  }
+
+  let content = <p>No movies.</p>;
+  if (dataLoading) {
+    content = <p>Fetching movies...</p>;
+  }
+  if (error) {
+    content = <p>{error}</p>;
+  }
+  if (movies.length > 0) {
+    content = <MoviesList movies={movies} />;
   }
 
   return (
@@ -29,11 +52,7 @@ function App() {
       <section>
         <button onClick={fetchMoviesHandler}>Fetch Movies</button>
       </section>
-      <section>
-        {!dataLoading && movies.length === 0 && <p>No movies</p>}
-        {!dataLoading && movies.length > 0 && <MoviesList movies={movies} />}
-        {dataLoading && <p>Fetching movies...</p>}
-      </section>
+      <section>{content}</section>
     </React.Fragment>
   );
 }
